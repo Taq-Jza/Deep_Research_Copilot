@@ -3,6 +3,10 @@
 > 本文档是 `Task8_Deep_Research_Copilot` 的**完整运行演示记录**，收录四幕演示的真实终端输出、
 > 关键观测点与断言结果。所有输出均为实际运行采集，未做美化。
 
+> **关于数字的波动**：`/findings/` 下的文件数量由模型自行决定（同一议题因拆分角度不同，
+> 不同次运行会落在 8–13 个之间），因此轨迹里的文件名与文件数**每次略有不同**；
+> 下文选用一次完整运行作为样本，断言部分则只校验"必须产生文件"这类稳定条件。
+
 - 运行环境：Windows / 中文系统；`.venv`（Python 3.12.10）
 - 运行命令：`PYTHONUTF8=1 python main.py`（全量四幕，一次跑完）
 - 主 Agent 模型：`deepseek-chat`（DeepSeek）
@@ -22,7 +26,7 @@
 
 ---
 
-## 二、第 1 幕 · 完整研究工作流（第 3/4/5/7 章）
+## 二、第 1 幕 · 完整研究工作流
 
 ### 输入
 
@@ -89,10 +93,10 @@
   [model] send_brief: DeepAgents 异步子 Agent 引入评估简报                        ← 高风险外发，被闸门拦下
 ```
 
-### 任务清单（第 4 章：`write_todos`）
+### 任务清单（`write_todos`）
 
 ```
---- 任务清单（第 4 章：write_todos） ---
+--- 任务清单（write_todos） ---
   [x] 检索 deepagents 0.7 Async SubAgent 相关资料，落盘到 /findings/
   [x] 分析资料，产出 /workspace/analysis.md
   [x] 撰写简报 /workspace/report.md
@@ -101,12 +105,12 @@
 ```
 
 清单在过程中被多次更新（轨迹里出现 4 次 `todos 已更新`），且**在上下文被压缩后依然保留**——
-这是第 4 章强调的 `todos` 状态字段特性。
+这是 `todos` 状态字段的特性。
 
-### 虚拟文件系统产物（第 3 章：共享落盘）
+### 虚拟文件系统产物（共享落盘）
 
 ```
---- 虚拟文件系统产物（第 3 章：共享落盘） ---
+--- 虚拟文件系统产物（共享落盘） ---
   /findings/20261006T174842Z-deepagents-0-7异步子Agent支持后台非阻塞并发任务.md  (550 字符)
   /findings/20261006T174854Z-异步子Agent具有mid-flight更新与取消能力-支持任务状态跟踪.md  (478 字符)
   /findings/20261006T174913Z-异步子Agent已有生产级别应用案例和开发实践反馈.md  (568 字符)
@@ -132,22 +136,22 @@
   [OK] 共享文件系统共 13 个文件，其中落盘结论 11 条
 ```
 
-> **说明**：本幕末尾 `send_brief` 撞上第 9 章的审稿闸门而暂停，因此**不产生最终自然语言回复**
+> **说明**：本幕末尾 `send_brief` 撞上审稿闸门而暂停，因此**不产生最终自然语言回复**
 > （演示脚本已显式提示这一点）。投递审批链路在第 3 幕单独完整演示。
 
 **验证到的能力：**
 
 | 能力 | 证据 |
 |---|---|
-| 第 3 章 虚拟文件系统 | 子 Agent 落盘 11 个 `/findings/*.md`，主 Agent 用 `read_file` 复核到 `report.md` / `analysis.md` |
-| 第 4 章 任务规划 | `write_todos` 生成 5 项清单，状态从 `pending → in_progress → completed` 多次推进 |
-| 第 5 章 子 Agent | 三次 `task(...)` 委派（collector / analyst / synthesizer），上下文隔离 |
-| 第 5 章 结构化返回 | `[model] Findings:` 说明 collector 用 `response_format` 返回了结构化对象 |
-| 第 7 章 Skills | 主 Agent 与子 Agent 都 `read_file /skills/*/SKILL.md`，说明 Skill 被渐进式加载 |
+| 虚拟文件系统 | 子 Agent 落盘 11 个 `/findings/*.md`，主 Agent 用 `read_file` 复核到 `report.md` / `analysis.md` |
+| 任务规划 | `write_todos` 生成 5 项清单，状态从 `pending → in_progress → completed` 多次推进 |
+| 子 Agent | 三次 `task(...)` 委派（collector / analyst / synthesizer），上下文隔离 |
+| 结构化返回 | `[model] Findings:` 说明 collector 用 `response_format` 返回了结构化对象 |
+| Skills | 主 Agent 与子 Agent 都 `read_file /skills/*/SKILL.md`，说明 Skill 被渐进式加载 |
 
 ---
 
-## 三、第 2 幕 · 长期记忆跨线程（第 8 章）
+## 三、第 2 幕 · 长期记忆跨线程
 
 ### 对话 1：写入新偏好（新 thread）
 
@@ -184,7 +188,7 @@ Agent 没有覆盖原有偏好，而是**先读原文件再追加**，把新偏�
   [OK] 两个 thread_id 不同，偏好仍从 Store 加载到系统提示词
 ```
 
-**验证到的能力（第 8 章）：**
+**验证到的能力：**
 
 - 两次 `invoke()` 使用**完全不同的 `thread_id`**，但第二次仍读到了第一次写入的偏好
 - 证明记忆不是靠对话历史携带，而是靠 `memory=["/memories/preferences.md"]`
@@ -197,7 +201,7 @@ Agent 没有覆盖原有偏好，而是**先读原文件再追加**，把新偏�
 
 ---
 
-## 四、第 3 幕 · 投递审批（第 9 章：`interrupt_on`）
+## 四、第 3 幕 · 投递审批（`interrupt_on`）
 
 ### 输入（内容已定稿，流程必然走到 `send_brief`）
 
@@ -238,7 +242,7 @@ Agent 没有覆盖原有偏好，而是**先读原文件再追加**，把新偏�
   [OK] send_brief 被拦截后才执行；恢复时使用了 edit 改写后的渠道参数
 ```
 
-**验证到的能力（第 9 章）：**
+**验证到的能力：**
 
 - `interrupt_on={"send_brief": {"allowed_decisions": ["approve", "edit", "reject"]}}`
   确实在工具执行**之前**暂停，返回 `action_requests` 与 `review_configs`
@@ -250,7 +254,7 @@ Agent 没有覆盖原有偏好，而是**先读原文件再追加**，把新偏�
 
 ---
 
-## 五、第 4 幕 · 交付前审稿（第 9 章：自定义 Middleware + `interrupt()`）
+## 五、第 4 幕 · 交付前审稿（自定义 Middleware + `interrupt()`）
 
 ### 输入
 
@@ -275,7 +279,7 @@ Agent 没有覆盖原有偏好，而是**先读原文件再追加**，把新偏�
   [OK] 暂停点不对应任何工具，靠 Node-style Hook 里的 interrupt() 实现
 ```
 
-**验证到的能力（第 9 章）：**
+**验证到的能力：**
 
 - 暂停点**不对应任何工具**——是"模型已生成最终答复、尚未交给用户"这一刻，
   `interrupt_on` 表达不了这种中断，必须用自定义 Middleware 的 `after_model` Hook 直接 `interrupt()`
@@ -286,12 +290,12 @@ Agent 没有覆盖原有偏好，而是**先读原文件再追加**，把新偏�
 
 ## 六、验证结论汇总
 
-| 幕 | 覆盖章节 | 断言结果 | 核心证据 |
+| 幕 | 覆盖能力 | 断言结果 | 核心证据 |
 |---|---|---|---|
-| 第 1 幕 | 3 / 4 / 5 / 7 | ✅ 13 个文件，11 条落盘结论 | 三次子 Agent 委派、`write_todos` 推进、Skills 被加载 |
-| 第 2 幕 | 8 | ✅ 跨线程读到新偏好 | 不同 `thread_id` 仍加载 `/memories/preferences.md` |
-| 第 3 幕 | 9 | ✅ `edit` 改写渠道后执行 | `send_brief` 被拦 → 改参 → 两层闸门交替恢复 |
-| 第 4 幕 | 9 | ✅ 无工具中断被触发 | `after_model` 中 `interrupt()` 拦下最终草稿 |
+| 第 1 幕 | 虚拟文件系统 / 任务规划 / 子 Agent / Skills | ✅ 13 个文件，11 条落盘结论 | 三次子 Agent 委派、`write_todos` 推进、Skills 被加载 |
+| 第 2 幕 | 长期记忆 | ✅ 跨线程读到新偏好 | 不同 `thread_id` 仍加载 `/memories/preferences.md` |
+| 第 3 幕 | 投递审批 | ✅ `edit` 改写渠道后执行 | `send_brief` 被拦 → 改参 → 两层闸门交替恢复 |
+| 第 4 幕 | 交付前审稿 | ✅ 无工具中断被触发 | `after_model` 中 `interrupt()` 拦下最终草稿 |
 
 **六项能力全部经真实运行验证通过。** 四幕的断言均为程序化断言（`assert`），
 任何一环失效都会直接抛错终止，而不是靠人工肉眼确认。

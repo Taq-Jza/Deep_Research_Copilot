@@ -2,22 +2,22 @@
 
 用 Deep Agents 搭一个「研究协作 Agent」：把一句模糊的调研诉求，跑成一份带来源、可复核的团队简报。
 
-项目对应课程 **第 3–9 章**，把其中 **六项能力** 组装到同一个 Agent 上，而不是六个互不相干的例子。
+项目把 Deep Agents 的 **六项能力** 组装到同一个 Agent 上，而不是六个互不相干的例子。
 
 ---
 
 ## 一、能力映射
 
-| # | 能力 | 章节 | 在本项目中的落点 |
-|---|---|---|---|
-| 1 | 虚拟文件系统 + 上下文管理 | 第 3 章 | `CompositeBackend`：`/findings`、`/workspace` 是主/子 Agent 共享的草稿区；`/memories`、`/skills` 路由到持久化 Store |
-| 2 | 任务规划 | 第 4 章 | `middleware=[TodoListMiddleware()]`，v0.7 起需显式加入 |
-| 3 | 子 Agent 与上下文隔离 | 第 5 章 | `collector` / `analyst` / `synthesizer` 三个专业子 Agent，各自独立上下文与工具集 |
-| 4 | 结构化子 Agent 返回 | 第 5 章 | `collector` 用 `response_format=Findings` 返回 JSON 而非自由文本 |
-| 5 | 长期记忆 | 第 8 章 | `memory=["/memories/preferences.md"]` + `StoreBackend` 按用户隔离，跨线程加载 |
-| 6 | Human-in-the-Loop | 第 9 章 | 两层：`interrupt_on` 拦外发工具；自定义 `ReviewerGateMiddleware` 在交付前审稿 |
+| # | 能力 | 在本项目中的落点 |
+|---|---|---|
+| 1 | 虚拟文件系统 + 上下文管理 | `CompositeBackend`：`/findings`、`/workspace` 是主/子 Agent 共享的草稿区；`/memories`、`/skills` 路由到持久化 Store |
+| 2 | 任务规划 | `middleware=[TodoListMiddleware()]`，v0.7 起需显式加入 |
+| 3 | 子 Agent 与上下文隔离 | `collector` / `analyst` / `synthesizer` 三个专业子 Agent，各自独立上下文与工具集 |
+| 4 | 结构化子 Agent 返回 | `collector` 用 `response_format=Findings` 返回 JSON 而非自由文本 |
+| 5 | 长期记忆 | `memory=["/memories/preferences.md"]` + `StoreBackend` 按用户隔离，跨线程加载 |
+| 6 | Human-in-the-Loop | 两层：`interrupt_on` 拦外发工具；自定义 `ReviewerGateMiddleware` 在交付前审稿 |
 
-**Skills（第 7 章）** 作为第 4 项能力的载体一并接入：`skills/deep-research` 与 `skills/report-writer` 通过 Store 注入，用 `FilesystemPermission` 设为只读。
+**Skills** 作为第 4 项能力的载体一并接入：`skills/deep-research` 与 `skills/report-writer` 通过 Store 注入，用 `FilesystemPermission` 设为只读。
 
 ---
 
@@ -82,8 +82,7 @@ python main.py 3     # 投递审批（interrupt_on）
 python main.py 4     # 交付前审稿（自定义 Middleware + interrupt()）
 
 # 切到真人交互审批（第 3、4 幕）
-python main.py 3 --interactive
-```
+python main.py 3 --interactive```
 
 `.env` 需要：
 
@@ -102,23 +101,23 @@ python main.py 3 --interactive
 
 ### 第 1 幕 · 完整研究工作流
 
-覆盖第 3/4/5/7 章。用 `stream(..., subgraphs=True)` 实时打印主 Agent 与子 Agent 的**全部工具调用**，
+覆盖虚拟文件系统 / 任务规划 / 子 Agent / Skills。用 `stream(..., subgraphs=True)` 实时打印主 Agent 与子 Agent 的**全部工具调用**，
 结束后打印 `todos` 轨迹与虚拟文件系统产物清单。断言：共享文件系统必须产生文件（否则说明委派或落盘没生效）。
 
 ### 第 2 幕 · 长期记忆跨线程
 
-覆盖第 8 章。对话 1 让 Agent 记住新偏好 → 从 **Store 核对真实写入结果**（不能只看模型回复"已记住"）
+覆盖长期记忆。对话 1 让 Agent 记住新偏好 → 从 **Store 核对真实写入结果**（不能只看模型回复"已记住"）
 → 对话 2 用**全新 `thread_id`** 验证偏好仍从 Store 加载到系统提示词。断言：新线程回复中必须出现新偏好。
 
 ### 第 3 幕 · 投递审批
 
-覆盖第 9 章 `interrupt_on`。用一条已定稿内容请求投递，因此流程必然走到 `send_brief`。
+覆盖 `interrupt_on`。用一条已定稿内容请求投递，因此流程必然走到 `send_brief`。
 非交互模式演示 `edit`：审批人把渠道从 `team` 改成 `team-channel`，恢复后使用的是改写后的参数。
 `--interactive` 可切到真人逐条 `approve / edit / reject`。
 
 ### 第 4 幕 · 交付前审稿
 
-覆盖第 9 章底层 `interrupt()`。暂停点**不对应任何工具**——是"模型已写完最终答复、尚未交付"这一刻。
+覆盖底层 `interrupt()`。暂停点**不对应任何工具**——是"模型已写完最终答复、尚未交付"这一刻。
 这只能靠自定义 Middleware 的 Node-style Hook 实现，`interrupt_on` 表达不了。
 
 ---
@@ -164,8 +163,8 @@ def make_memory_namespace(default_user_id: str):
 ## 七、已知边界
 
 - **检索质量**：`internet_search` 走 Tavily，返回的是标题 + 摘要，不抓全文。要更深的内容需另加 `fetch_page`。
-- **Store 是内存态**：`InMemoryStore` 进程重启即丢。生产应换 `PostgresStore`（第 8 章）。
+- **Store 是内存态**：`InMemoryStore` 进程重启即丢。生产应换 `PostgresStore`。
 - **Checkpointer 是内存态**：`InMemorySaver` 同理；跨进程恢复中断需要持久化 Checkpointer。
-- **`interrupt()` 的重放语义**：恢复时节点从头重放，`interrupt()` 之前的副作用必须幂等（第 9 章规则 2）。
+- **`interrupt()` 的重放语义**：恢复时节点从头重放，`interrupt()` 之前的副作用必须幂等。
   `ReviewerGateMiddleware` 的 `after_model` 里只做消息读取，因此是安全的。
 - **模型流控**：硅基流动免费额度会返回 429。`sub_model()` 设了 `max_retries=6` 做线性退避。

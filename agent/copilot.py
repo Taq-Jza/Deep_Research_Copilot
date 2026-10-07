@@ -86,7 +86,7 @@ def build_store(user_id: str = DEFAULT_USER_ID) -> InMemoryStore:
 
     CompositeBackend 会剥掉路由前缀 `/skills/`，因此 Store key 必须写成
     `/deep-research/SKILL.md`。写成 `/skills/deep-research/SKILL.md` 会被补回一次前缀，
-    最终暴露成错误的 `/skills/skills/deep-research/SKILL.md` —— 这是第 8 章明确的易错点。
+    最终暴露成错误的 `/skills/skills/deep-research/SKILL.md` —— 这是社区反馈明确的易错点。
     """
     store = InMemoryStore()
     store.put((user_id, "memories"), "/preferences.md", create_file_data(DEFAULT_PREFERENCES))
@@ -129,8 +129,8 @@ def build_agent(user_id: str = DEFAULT_USER_ID, checkpointer=None, store=None):
         subagents=build_subagents(backend),
         interrupt_on=INTERRUPT_ON,
         middleware=[
-            TodoListMiddleware(),  # 第 4 章：v0.7 起规划能力需显式加入
-            ReviewerGateMiddleware(),  # 第 9 章：交付前审稿
+            TodoListMiddleware(),  # v0.7 起规划能力需显式加入
+            ReviewerGateMiddleware(),  # 交付前审稿
         ],
         system_prompt=MAIN_SYSTEM_PROMPT,
     )

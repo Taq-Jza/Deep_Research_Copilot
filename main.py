@@ -1,4 +1,4 @@
-"""洞察台（Insight Desk）运行脚本。
+"""Insight Desk运行脚本。
 
 四项演示各自独立，可以单独跑：
 
@@ -44,7 +44,7 @@ def step(text: str) -> None:
 
 
 def show_todos(todos) -> None:
-    """打印任务清单，直观呈现第 4 章的规划轨迹。"""
+    """打印任务清单，直观呈现规划轨迹。"""
     if not todos:
         print("(本次未创建任务清单)")
         return
@@ -105,7 +105,7 @@ def trace(agent, payload: dict, config: dict) -> dict:
 
 
 def act1_research_workflow(agent) -> None:
-    title("第 1 幕 · 完整研究工作流（第 3/4/5/7 章）")
+    title("第 1 幕 · 完整研究工作流")
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
 
     step("实时轨迹（主 Agent 与子 Agent 的全部工具调用）")
@@ -113,16 +113,16 @@ def act1_research_workflow(agent) -> None:
     # 第 1 幕只验证"规划 + 委派 + 落盘"，因此这里把审批交给第 3 幕单独演示。
     result = trace(agent, {"messages": [{"role": "user", "content": RESEARCH_TASK}]}, config)
 
-    step("任务清单（第 4 章：write_todos）")
+    step("任务清单（write_todos）")
     show_todos(result.get("todos"))
 
-    step("虚拟文件系统产物（第 3 章：共享落盘）")
+    step("虚拟文件系统产物（共享落盘）")
     files = result.get("files") or {}
     for path in sorted(files):
         print(f"  {path}  ({len(files[path]['content'])} 字符)")
 
     step("最终回复")
-    # 本幕末尾会调用 send_brief（高风险外发），它在第 9 章的闸门处暂停，
+    # 本幕末尾会调用 send_brief（高风险外发），它在审稿闸门处暂停，
     # 因此这里通常拿不到最终自然语言回复——审批链路留给第 3 幕单独演示。
     messages = result.get("messages") or []
     has_reply = any(type(m).__name__ == "AIMessage" and not m.tool_calls for m in messages)
@@ -135,10 +135,10 @@ def act1_research_workflow(agent) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# 第 2 幕：长期记忆跨线程（第 8 章）
+# 第 2 幕：长期记忆跨线程
 # --------------------------------------------------------------------------- #
 def act2_long_term_memory(agent, store, user_id: str) -> None:
-    title("第 2 幕 · 长期记忆跨线程（第 8 章）")
+    title("第 2 幕 · 长期记忆跨线程")
 
     step("对话 1：写入偏好（新 thread）")
     agent.invoke(
@@ -171,7 +171,7 @@ def act2_long_term_memory(agent, store, user_id: str) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# 第 3 幕：投递审批（第 9 章 interrupt_on）
+# 第 3 幕：投递审批（interrupt_on）
 # --------------------------------------------------------------------------- #
 def _ask_reviewer(interactive: bool) -> dict:
     """审稿决策。
@@ -219,7 +219,7 @@ DELIVERY_PROMPT = (
 
 
 def act3_delivery_approval(agent, interactive: bool) -> None:
-    title("第 3 幕 · 投递审批（第 9 章：interrupt_on）")
+    title("第 3 幕 · 投递审批（interrupt_on）")
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
 
     step("发起投递请求（内容已定稿，只差外发这一步）")
@@ -273,10 +273,10 @@ def act3_delivery_approval(agent, interactive: bool) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# 第 4 幕：交付前审稿（第 9 章 interrupt()）
+# 第 4 幕：交付前审稿（自定义 Middleware + interrupt()）
 # --------------------------------------------------------------------------- #
 def act4_review_gate(agent, interactive: bool) -> None:
-    title("第 4 幕 · 交付前审稿（第 9 章：自定义 Middleware + interrupt()）")
+    title("第 4 幕 · 交付前审稿（自定义 Middleware + interrupt()）")
     config = {"configurable": {"thread_id": str(uuid.uuid4())}}
 
     step("提一个简单问题，观察模型交付前被拦下")

@@ -1,16 +1,3 @@
-"""洞察台（Insight Desk）—— 集中放置路径约定与模型工厂。
-
-能力映射（课程第 3–9 章）：
-
-| 能力 | 章节 | 落点 |
-|---|---|---|
-| 虚拟文件系统 | 第 3 章 | `/findings` 与 `/workspace` 共享落盘 |
-| 任务规划 | 第 4 章 | `TodoListMiddleware` 注入 `write_todos` |
-| 子 Agent | 第 5 章 | collector / analyst / synthesizer 三专业子 Agent |
-| Skills | 第 7 章 | `/skills/deep-research`、`/skills/report-writer` |
-| 长期记忆 | 第 8 章 | `/memories/preferences.md` 跨线程加载 |
-| HITL | 第 9 章 | `send_brief` 审批 + 自定义 `ReviewerGateMiddleware` |
-"""
 
 import os
 
@@ -23,7 +10,7 @@ REPORT_PATH = "/workspace/report.md"
 MEMORY_PATH = "/memories/preferences.md"
 SKILLS_ROOT = "/skills"
 
-# 两个领域 Skill 的目录（对应 skills/ 下的子目录，第 7 章）
+# 两个领域 Skill 的目录（对应 skills/ 下的子目录）
 RESEARCH_SKILL = f"{SKILLS_ROOT}/deep-research/"
 WRITER_SKILL = f"{SKILLS_ROOT}/report-writer/"
 
