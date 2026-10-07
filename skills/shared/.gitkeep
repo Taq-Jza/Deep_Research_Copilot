@@ -1,0 +1,2 @@
+# skills/shared/ 预留给团队级 Skills：同名 Skill 时，列表中靠后的目录覆盖靠前的。
+# 本 Demo 的两个 Skill 通过 Store 注入（见 agent/copilot.py 的 build_store）。

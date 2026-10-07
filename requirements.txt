@@ -1,0 +1,7 @@
+deepagents>=0.7.0
+langchain>=1.4.0
+langchain-openai
+langgraph
+langgraph-checkpoint
+python-dotenv
+tavily-python
