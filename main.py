@@ -8,7 +8,7 @@
     python main.py 3             # 只跑第 3 幕：投递审批（HITL）
     python main.py 4             # 只跑第 4 幕：交付前审稿（自定义 Middleware）
 
-`python main.py 3 --interactive` 可以切到真人交互审批。
+加 `--interactive` 可切到真人交互审批。
 """
 
 import os
@@ -72,38 +72,31 @@ def last_reply(result) -> str:
 def _iter_updates(chunk):
     """把 stream(updates, subgraphs=True) 的 chunk 摊平成 (节点名, 更新字典) 序列。
 
-    开启 subgraphs 后，每条 chunk 可能是：
-      - (namespace, update) 元组（子图/子 Agent 的更新）
-      - {node: update} 字典（主图的更新）
-    这里递归摊平两种形态。
+    开启 subgraphs 后每条 chunk 可能是 `(namespace, update)` 元组（子图/子 Agent 更新）
+    或 `{node: update}` 字典（主图更新），这里递归摊平两种形态。
     """
     if isinstance(chunk, tuple):
         for item in chunk:
             yield from _iter_updates(item)
-        return
-    if not isinstance(chunk, dict):
-        return
-    for node, update in chunk.items():
-        if isinstance(update, dict) and ("messages" in update or "todos" in update or "files" in update):
-            yield node, update
-        else:
-            yield from _iter_updates(update)
+    elif isinstance(chunk, dict):
+        for node, update in chunk.items():
+            if isinstance(update, dict) and {"messages", "todos", "files"} & update.keys():
+                yield node, update
+            else:
+                yield from _iter_updates(update)
 
 
 def trace(agent, payload: dict, config: dict) -> dict:
     """流式跑一遍 Agent，边跑边打印工具调用轨迹，最后返回完整状态。"""
     for chunk in agent.stream(payload, config=config, stream_mode="updates", subgraphs=True):
         for node, update in _iter_updates(chunk):
-            for message in update.get("messages", []) or []:
+            for message in update.get("messages") or []:
                 for call in getattr(message, "tool_calls", None) or []:
                     args = call["args"]
-                    detail = (
-                        args.get("description")
-                        or args.get("file_path")
-                        or args.get("query")
-                        or args.get("subject")
-                        or args.get("channel")
-                        or ""
+                    detail = next(
+                        (v for k in ("description", "file_path", "query", "subject", "channel")
+                         if (v := args.get(k))),
+                        "",
                     )
                     print(f"  [{node}] {call['name']}: {str(detail)[:76]}")
             if update.get("todos"):
@@ -129,7 +122,11 @@ def act1_research_workflow(agent) -> None:
         print(f"  {path}  ({len(files[path]['content'])} 字符)")
 
     step("最终回复")
-    print(last_reply(result))
+    # 本幕末尾会调用 send_brief（高风险外发），它在第 9 章的闸门处暂停，
+    # 因此这里通常拿不到最终自然语言回复——审批链路留给第 3 幕单独演示。
+    messages = result.get("messages") or []
+    has_reply = any(type(m).__name__ == "AIMessage" and not m.tool_calls for m in messages)
+    print(last_reply(result) if has_reply else "  （末步停在 send_brief 审批点，无最终回复；审批演示见第 3 幕）")
 
     step("断言")
     assert files, "未产生任何文件，说明子 Agent 没有落盘"
@@ -164,7 +161,12 @@ def act2_long_term_memory(agent, store, user_id: str) -> None:
     print(last_reply(result))
 
     step("断言")
-    assert "统计口径" in last_reply(result), "新线程未读到新偏好，记忆未跨线程生效"
+    # 模型复述偏好时会用同义表述，因此只锚定一个稳定特征词：
+    # "统计" 来自对话 1 新写入的偏好，是"跨线程读到新内容"的直接证据。
+    reply = last_reply(result)
+    assert "统计" in reply, (
+        f"新线程未读到新偏好，记忆未跨线程生效：{reply[:200]}"
+    )
     print("  [OK] 两个 thread_id 不同，偏好仍从 Store 加载到系统提示词")
 
 
@@ -301,14 +303,6 @@ def act4_review_gate(agent, interactive: bool) -> None:
 # --------------------------------------------------------------------------- #
 # 入口
 # --------------------------------------------------------------------------- #
-ACTS = {
-    "1": "完整研究工作流（规划 + 委派 + 共享文件系统 + Skills）",
-    "2": "长期记忆跨线程",
-    "3": "投递审批（interrupt_on）",
-    "4": "交付前审稿（自定义 Middleware + interrupt()）",
-}
-
-
 def main() -> None:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     interactive = "--interactive" in sys.argv

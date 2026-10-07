@@ -1,10 +1,10 @@
 """洞察台（Insight Desk）—— 集中放置路径约定与模型工厂。
 
-Demo 的能力映射（参考课程第 3-9 章）：
+能力映射（课程第 3–9 章）：
 
 | 能力 | 章节 | 落点 |
 |---|---|---|
-| 虚拟文件系统 | 第 3 章 | `/findings` 与 `/workspace` 共享落盘，`READ_LIMIT` 演示分片读取 |
+| 虚拟文件系统 | 第 3 章 | `/findings` 与 `/workspace` 共享落盘 |
 | 任务规划 | 第 4 章 | `TodoListMiddleware` 注入 `write_todos` |
 | 子 Agent | 第 5 章 | collector / analyst / synthesizer 三专业子 Agent |
 | Skills | 第 7 章 | `/skills/deep-research`、`/skills/report-writer` |
@@ -18,14 +18,16 @@ from langchain_openai import ChatOpenAI
 
 # --- 路径约定：写在一处，Agent 提示词与运行脚本共用 ---
 FINDINGS_DIR = "/findings"
-WORKSPACE_DIR = "/workspace"
-ANALYSIS_PATH = f"{WORKSPACE_DIR}/analysis.md"
-REPORT_PATH = f"{WORKSPACE_DIR}/report.md"
+ANALYSIS_PATH = "/workspace/analysis.md"
+REPORT_PATH = "/workspace/report.md"
 MEMORY_PATH = "/memories/preferences.md"
 SKILLS_ROOT = "/skills"
 
-# --- 模型 ---
-# 主 Agent 与子 Agent 走不同服务商，用于演示"子 Agent 可用不同模型"
+# 两个领域 Skill 的目录（对应 skills/ 下的子目录，第 7 章）
+RESEARCH_SKILL = f"{SKILLS_ROOT}/deep-research/"
+WRITER_SKILL = f"{SKILLS_ROOT}/report-writer/"
+
+# --- 模型：主 Agent 与子 Agent 走不同服务商，演示"子 Agent 可用不同模型" ---
 MAIN_MODEL_NAME = os.getenv("MODEL_NAME", "deepseek-chat")
 MAIN_BASE_URL = os.getenv("DEEPSEEK_URL", "https://api.deepseek.com/v1")
 SUB_MODEL_NAME = os.getenv("SUB_MODEL_NAME", "deepseek-ai/DeepSeek-V3.2")

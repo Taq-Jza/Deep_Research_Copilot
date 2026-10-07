@@ -46,6 +46,8 @@
 ```
 Task8_Deep_Research_Copilot/
 ├── main.py                     # 运行脚本：四幕演示，可单幕运行
+├── README.md                   # 本文档
+├── Task8_Deep_Research_Copilot.md  # 完整运行演示记录（真实终端输出）
 ├── agent/
 │   ├── config.py               # 路径约定 + 模型工厂（主/子走不同服务商）
 │   ├── tools.py                # 三个共享工具：internet_search / write_finding / send_brief
@@ -59,6 +61,8 @@ Task8_Deep_Research_Copilot/
 ├── requirements.txt
 └── .env                        # 不提交（见 .gitignore）
 ```
+
+> 运行演示记录见 [`Task8_Deep_Research_Copilot.md`](./Task8_Deep_Research_Copilot.md)。
 
 ---
 
@@ -126,21 +130,26 @@ python main.py 3 --interactive
 `memory=` 的加载链路是 `before_agent → backend.download_files()`，一旦 namespace 与
 `store.put()` 时不一致，框架**不会报错**，只会静默加载不到内容——表现为"Agent 完全不知道偏好"。
 
-本项目的 `memory_namespace()` 是记忆读写路径上**唯一的事实来源**，且 `build_agent()` 会把
-`DEFAULT_USER_ID` 同步给兜底分支：
+本项目的记忆 namespace 由 `make_memory_namespace(user_id)` 这个工厂构造，是记忆读写路径上
+**唯一的事实来源**——它被 `build_agent()` 直接绑定到 `StoreBackend`，不存在"运行期解析出的
+namespace 与预填 namespace 不一致"的可能：
 
 ```python
-def memory_namespace(runtime):
-    if runtime is not None and getattr(runtime, "server_info", None) and runtime.server_info.user:
-        return (runtime.server_info.user.identity, "memories")
-    user_id = getattr(getattr(runtime, "context", None), "user_id", None)
-    return (user_id or DEFAULT_USER_ID, "memories")   # 本地 invoke() 时 context 为 None
+def make_memory_namespace(default_user_id: str):
+    def memory_namespace(runtime) -> tuple[str, ...]:
+        if runtime is not None and getattr(runtime, "server_info", None) and runtime.server_info.user:
+            return (runtime.server_info.user.identity, "memories")
+        user_id = getattr(getattr(runtime, "context", None), "user_id", None)
+        return (user_id or default_user_id, "memories")   # 本地 invoke() 时 context 为 None
+    return memory_namespace
 ```
 
 > **踩坑记录**：本地 `invoke()` 不传 `context=` 时，`runtime.context` 就是 `None`。
 > 早期版本直接 `getattr(runtime.context, "user_id", "local-user")`，导致运行期 namespace 变成
 > `("local-user", "memories")`，而文件预填在 `("user-123", "memories")` —— 记忆永远加载不到。
-> 排查方式是给 `memory_namespace` 加个探针，打印真实返回值，而不是只看预填的 key。
+> 后续又改用模块级 `global DEFAULT_USER_ID` 同步两处，虽然能跑通但属于隐式共享状态；
+> 最终改为工厂闭包，把默认 user_id 显式捕获进解析器，彻底消除全局可变状态。
+> 排查这类问题的方式是给 namespace 解析函数加探针打印真实返回值，而不是只看预填的 key。
 
 ### 2. `write_finding` 为什么直接调 backend，而不是返回路径让模型再写
 

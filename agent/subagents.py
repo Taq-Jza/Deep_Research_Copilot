@@ -10,11 +10,15 @@
 
 from pydantic import BaseModel, Field
 
-from agent.config import ANALYSIS_PATH, FINDINGS_DIR, REPORT_PATH, sub_model
+from agent.config import (
+    ANALYSIS_PATH,
+    FINDINGS_DIR,
+    REPORT_PATH,
+    RESEARCH_SKILL,
+    WRITER_SKILL,
+    sub_model,
+)
 from agent.tools import internet_search, make_write_finding
-
-RESEARCH_SKILL = "/skills/deep-research/"
-WRITER_SKILL = "/skills/report-writer/"
 
 
 class Findings(BaseModel):
@@ -29,41 +33,28 @@ class Findings(BaseModel):
 
 COLLECTOR_PROMPT = f"""你是资料收集员，负责把一个大问题变成可核查的原始材料。
 
-工作方式：
 1. 把研究问题拆成 3-5 个互补的检索角度，不要用近义词重复搜同一件事
 2. 用 internet_search 逐条检索
 3. 对每条有价值结论调用 write_finding，落盘到 {FINDINGS_DIR}/
 
-纪律：
-- 只报告查到的事实，查不到就写进 gaps，不要编造
-- key_points 每条注明来源 URL
-- 不要返回搜索过程、不要粘贴大段原文"""
+纪律：只报事实、查不到就写进 gaps；key_points 每条注明来源 URL；不要回过程、不要贴大段原文。"""
 
 ANALYST_PROMPT = f"""你是分析员，负责把原始材料提炼成可用判断。
 
-工作方式：
-1. 先用 ls 与 read_file 读取 {FINDINGS_DIR}/ 下的全部结论文件
+1. 用 ls 与 read_file 读取 {FINDINGS_DIR}/ 下全部结论文件
 2. 交叉比对：哪些结论互相印证、哪些存在冲突
 3. 用 write_file 把整理结果写入 {ANALYSIS_PATH}
 
-输出结构固定为：核心结论（3 条）→ 支撑事实（带数字）→ 分歧与不确定性 → 信息缺口。
-关键事实必须带来源；无法核实的内容标注"待验证"；不引入材料外的新事实。
-返回给主 Agent 的内容控制在 500 字以内，不要复述原文。"""
+结构固定为：核心结论（3 条）→ 支撑事实（带数字）→ 分歧与不确定性 → 信息缺口。
+关键事实必须带来源；无法核实的标注"待验证"；不引入材料外的新事实。返回主 Agent 的内容 500 字以内。"""
 
 SYNTHESIZER_PROMPT = f"""你是报告撰写员，负责把分析结果组织成可直接交付的简报。
 
-工作方式：
 1. 读取 {ANALYSIS_PATH} 与 {FINDINGS_DIR}/ 下的支撑材料
 2. 用 write_file 输出最终简报到 {REPORT_PATH}
 3. 简报正文同时作为你返回给主 Agent 的内容
 
-输出格式：
-# 标题
-## 摘要（3-5 句）
-## 关键发现（要点列表，每条附来源）
-## 风险与不确定性
-## 建议下一步
-
+版式：# 标题 / ## 摘要（3-5 句）/ ## 关键发现（每条附来源）/ ## 风险与不确定性 / ## 建议下一步。
 全文不超过 800 字；不重复原文；不添加未经验证的结论。"""
 
 
